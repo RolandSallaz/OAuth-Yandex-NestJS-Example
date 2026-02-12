@@ -1,54 +1,45 @@
-#Как происходит OAuth запрос
+# Как происходит OAuth запрос
 
-[ Клиент (браузер) ]
-        |
-        | 1. GET /auth/yandex
-        v
-[ NestJS Controller ]
-        |
-        | 2. AuthGuard('yandex')
-        v
-[ Passport (yandex strategy) ]
-        |
-        | 3. Редирект на Yandex OAuth
-        v
-[ Yandex OAuth ]
-        |
-        | 4. Пользователь логинится
-        |    и подтверждает доступ
-        v
-[ Yandex OAuth ]
-        |
-        | 5. Редирект обратно с параметром ?code=...
-        v
-[ GET /auth/yandex/callback ]
-        |
-        | 6. AuthGuard('yandex')
-        v
-[ passport-yandex ]
-        |
-        | 7. Обмен code → accessToken
-        | 8. Запрос профиля пользователя
-        v
-[ YandexStrategy.validate() ]
-        |
-        | 9. Приведение профиля к OAuthUserDto
-        |    (provider, providerId, email, name)
-        v
-[ req.user = OAuthUserDto ]
-        |
-        v
-[ AuthController callback ]
-        |
-        | 10. authService.findOrCreateOAuthUser()
-        |     - поиск пользователя
-        |     - регистрация при необходимости
-        v
-[ User entity ]
-        |
-        | 11. генерируем токены
-        v
-[ JWT access + refresh tokens ]
-        |
-        v
-[ Ответ клиенту ]
+1. **Клиент (браузер)**  
+   Отправляет запрос `GET /auth/yandex`.
+
+2. **NestJS Controller**  
+   Запрос перехватывается `AuthGuard('yandex')`.
+
+3. **Passport (yandex strategy)**  
+   Пользователь перенаправляется на страницу OAuth Яндекса.
+
+4. **Yandex OAuth**  
+   Пользователь логинится и подтверждает доступ.
+
+5. **Yandex OAuth → callback**  
+   Яндекс делает редирект обратно на  
+   `GET /auth/yandex/callback?code=...`.
+
+6. **AuthGuard('yandex')**  
+   Guard снова перехватывает запрос callback.
+
+7. **passport-yandex**  
+   - обменивает `code` на `accessToken`  
+   - запрашивает профиль пользователя
+
+8. **YandexStrategy.validate()**  
+   Профиль приводится к `OAuthUserDto`  
+   (`provider`, `providerId`, `email`, `name`).
+
+9. **req.user**  
+   В `req.user` сохраняется `OAuthUserDto`.
+
+10. **AuthController callback**  
+    Вызывается `authService.findOrCreateOAuthUser()`:
+    - поиск пользователя  
+    - регистрация при необходимости
+
+11. **User entity**  
+    Получаем пользователя системы.
+
+12. **Генерация токенов**  
+    Генерируются собственные `JWT access + refresh tokens`.
+
+13. **Ответ клиенту**  
+    Клиент получает JWT-токены.
